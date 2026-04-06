@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comanda</title>
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #111;
+  color: #fff;
+  margin: 0;
+  padding: 10px;
+}
+
+button {
+  padding: 10px;
+  margin: 5px;
+  border: none;
+  border-radius: 8px;
+  background: #333;
+  color: white;
+}
+
+input {
+  padding: 8px;
+  margin: 5px;
+  border-radius: 6px;
+  border: none;
+}
+
+.section {
+  margin-bottom: 20px;
+}
+
+.card {
+  background: #1c1c1c;
+  padding: 10px;
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<h2>🍺 Comanda</h2>
+
+<div class="section">
+  <input id="nome" placeholder="Nome">
+  <button onclick="addPessoa()">+ Pessoa</button>
+</div>
+
+<div class="section">
+  <button onclick="addItem('cerveja')">+ Cerveja</button>
+  <button onclick="addItem('petisco')">+ Petisco</button>
+  <button onclick="customItem()">+ Outro</button>
+</div>
+
+<div id="pessoas"></div>
+<div id="itens"></div>
+
+<h3>Total por pessoa</h3>
+<div id="resultado"></div>
+
+<script>
+let pessoas = [];
+let itens = [];
+
+function addPessoa() {
+  const nome = document.getElementById("nome").value;
+  if (!nome) return;
+
+  pessoas.push({
+    nome,
+    ativo: true,
+    pago: 0,
+    entrouEm: Date.now()
+  });
+
+  document.getElementById("nome").value = "";
+  render();
+}
+
+function sair(index) {
+  pessoas[index].ativo = false;
+  calcularPagamento(index);
+  render();
+}
+
+function pagar(index) {
+  let valor = prompt("Quanto pagou?");
+  if (!valor) return;
+  pessoas[index].pago += parseFloat(valor);
+  render();
+}
+
+function addItem(nome) {
+  itens.push({
+    nome,
+    preco: prompt("Preço?"),
+    participantes: pessoas.filter(p => p.ativo).map(p => p.nome),
+    taxa: nome !== "couvert",
+    timestamp: Date.now()
+  });
+
+  render();
+}
+
+function customItem() {
+  let nome = prompt("Nome do item:");
+  if (!nome) return;
+  addItem(nome);
+}
+
+function calcular() {
+  let totais = {};
+
+  pessoas.forEach(p => totais[p.nome] = 0);
+
+  itens.forEach(item => {
+    let participantes = pessoas.filter(p =>
+      item.participantes.includes(p.nome)
+    );
+
+    let valor = item.preco / participantes.length;
+
+    participantes.forEach(p => {
+      totais[p.nome] += valor * (item.taxa ? 1.1 : 1);
+    });
+  });
+
+  return totais;
+}
+
+function calcularPagamento(index) {
+  let totais = calcular();
+  let pessoa = pessoas[index];
+  alert(pessoa.nome + " deve pagar: R$ " + totais[pessoa.nome].toFixed(2));
+}
+
+function render() {
+  let pHTML = "";
+  pessoas.forEach((p, i) => {
+    pHTML += `
+      <div class="card">
+        ${p.nome} (${p.ativo ? "ativo" : "saiu"})
+        <br>
+        Pago: R$ ${p.pago.toFixed(2)}
+        <br>
+        <button onclick="pagar(${i})">Pagar</button>
+        ${p.ativo ? `<button onclick="sair(${i})">Sair</button>` : ""}
+      </div>
+    `;
+  });
+
+  document.getElementById("pessoas").innerHTML = pHTML;
+
+  let iHTML = "";
+  itens.forEach(item => {
+    iHTML += `
+      <div class="card">
+        ${item.nome} - R$ ${item.preco}
+      </div>
+    `;
+  });
+
+  document.getElementById("itens").innerHTML = iHTML;
+
+  let totais = calcular();
+  let rHTML = "";
+
+  for (let nome in totais) {
+    let pessoa = pessoas.find(p => p.nome === nome);
+    let saldo = totais[nome] - pessoa.pago;
+
+    rHTML += `
+      <div class="card">
+        ${nome}: R$ ${totais[nome].toFixed(2)}
+        <br>
+        Pago: R$ ${pessoa.pago.toFixed(2)}
+        <br>
+        Saldo: R$ ${saldo.toFixed(2)}
+      </div>
+    `;
+  }
+
+  document.getElementById("resultado").innerHTML = rHTML;
+}
+</script>
+
+</body>
+</html>
